@@ -65,7 +65,13 @@ async function run() {
       res.send(result);
     })
 
-    
+    app.delete("/api/v1/delete-house/:id", async (req, res)=>{
+      const houseId = req.params.id;
+      const query = {_id: new ObjectId(houseId)};
+      const result = await houseCollection.deleteOne(query);
+      res.send(result);
+    })
+
 
   } finally {
     // Ensures that the client will close when you finish/error
