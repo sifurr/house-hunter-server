@@ -26,6 +26,16 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
+    const database = client.db('houseHunter');
+    const houseCollection = database.collection('houses');
+
+    // api for adding houses
+    app.post('/api/v1/create-house/', async (req, res)=>{
+        const house = req.body;
+        const result = await houseCollection.insertOne(house);
+        res.send(result);
+    })
+
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
