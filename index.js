@@ -10,7 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ddl1jzo.mongodb.net/?retryWrites=true&w=majority`;
+// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ddl1jzo.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb://localhost:27017`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -30,11 +31,18 @@ async function run() {
     const houseCollection = database.collection('houses');
 
     // api for adding houses
-    app.post('/api/v1/create-house/', async (req, res)=>{
+    app.post("/api/v1/create-house", async (req, res)=>{
         const house = req.body;
         const result = await houseCollection.insertOne(house);
         res.send(result);
     })
+
+    app.get("/api/v1/houses", async (req, res)=>{
+      const result = await houseCollection.find().toArray();
+      res.send(result);
+    })
+
+    
 
   } finally {
     // Ensures that the client will close when you finish/error
