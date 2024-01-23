@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000
 
 // middlewares
@@ -39,6 +39,29 @@ async function run() {
 
     app.get("/api/v1/houses", async (req, res)=>{
       const result = await houseCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.patch("/api/v1/update-house/:id", async (req, res)=>{
+      const houseId = req.params.id;
+      const filter = {_id: new ObjectId(houseId)};
+      const house = req.body;
+      const updateDoc = {
+        $set: {         
+          "name": house.name,
+          "address": house.address,
+          "city": house.city,
+          "bedrooms": house.bedrooms,
+          "bathrooms": house.bathrooms,
+          "room_size": house.room_size,
+          "picture": house.picture,
+          "availability_date": house.availability_date,
+          "rent_per_month": house.rent_per_month,
+          "phone_number": house.phone_number,
+          "description": house.description
+        }
+      }
+      const result = await houseCollection.updateOne(filter, updateDoc);
       res.send(result);
     })
 
