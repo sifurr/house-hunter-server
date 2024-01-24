@@ -8,7 +8,17 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 
 // middlewares
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://darling-sundae-71ebec.netlify.app",
+      "https://65b098b12d2d443ef3ff2db7--darling-sundae-71ebec.netlify.app",
+    ],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -146,50 +156,65 @@ async function run() {
       }
     });
 
-    // api for adding houses
-    app.post("/api/v1/create-house", async (req, res) => {
-      const house = req.body;
-      const result = await houseCollection.insertOne(house);
-      res.send(result);
-    });
+    // API for adding houses
+    app.post(
+      "/api/v1/create-house",
+      checkUserRole("house owner"),
+      async (req, res) => {
+        const house = req.body;        
+        house.ownerId = req.user.userId;
+        const result = await houseCollection.insertOne(house);
+        res.send(result);
+      }
+    );
 
-    // api for getting houses
+    // API for getting houses
     app.get("/api/v1/houses", async (req, res) => {
-      const result = await houseCollection.find().toArray();
+      const result = await houseCollection
+        .find({ ownerId: req.user.userId })
+        .toArray();
       res.send(result);
     });
 
-    // api for updating house
-    app.patch("/api/v1/update-house/:id", async (req, res) => {
-      const houseId = req.params.id;
-      const filter = { _id: new ObjectId(houseId) };
-      const house = req.body;
-      const updateDoc = {
-        $set: {
-          name: house.name,
-          address: house.address,
-          city: house.city,
-          bedrooms: house.bedrooms,
-          bathrooms: house.bathrooms,
-          room_size: house.room_size,
-          picture: house.picture,
-          availability_date: house.availability_date,
-          rent_per_month: house.rent_per_month,
-          phone_number: house.phone_number,
-          description: house.description,
-        },
-      };
-      const result = await houseCollection.updateOne(filter, updateDoc);
-      res.send(result);
-    });
+    // API for updating house
+    app.patch(
+      "/api/v1/update-house/:id",
+      checkUserRole("house owner"),
+      async (req, res) => {
+        const houseId = req.params.id;
+        const filter = { _id: new ObjectId(houseId), ownerId: req.user.userId };
+        const house = req.body;
+        const updateDoc = {
+          $set: {
+            name: house.name,
+            address: house.address,
+            city: house.city,
+            bedrooms: house.bedrooms,
+            bathrooms: house.bathrooms,
+            room_size: house.room_size,
+            picture: house.picture,
+            availability_date: house.availability_date,
+            rent_per_month: house.rent_per_month,
+            phone_number: house.phone_number,
+            description: house.description,
+          },
+        };
+        const result = await houseCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      }
+    );
 
-    // api for deleting house
-    app.delete("/api/v1/delete-house/:id", async (req, res) => {
-      const houseId = req.params.id;
-      const query = { _id: new ObjectId(houseId) };
-      const result = await houseCollection.deleteOne(query);
-      res.send(result);
-    });
+    // API for deleting house
+    app.delete(
+      "/api/v1/delete-house/:id",
+      checkUserRole("house owner"),
+      async (req, res) => {
+        const houseId = req.params.id;
+        const query = { _id: new ObjectId(houseId), ownerId: req.user.userId };
+        const result = await houseCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
