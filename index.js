@@ -68,11 +68,11 @@ async function run() {
     // api for user registration
     app.post("/api/v1/user/register", async (req, res) => {
       const { fullName, role, phoneNumber, email, password } = req.body;
-    
+
       if (!fullName || !role || !phoneNumber || !email || !password) {
         return res.status(400).json({ message: "All fields are mandatory" });
       }
-    
+
       const newUser = {
         fullName,
         role,
@@ -80,24 +80,71 @@ async function run() {
         email,
         password,
       };
-    
+
       try {
         const result = await userCollection.insertOne(newUser);
-    
-        if (result.insertedId) {        
+
+        if (result.insertedId) {
           res.status(201).json({
             message: "User registered successfully",
             data: newUser,
           });
-        } else {         
+        } else {
           res.status(500).json({ message: "Internal server error" });
         }
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal server error" });
       }
-    });    
-    
+    });
+
+    // authenticated user
+    app.get("/api/v1/authenticated-user", verifyToken, (req, res) => {
+      res.json({ user: req.user });
+    });
+
+    // api for user login
+    app.post("/api/v1/user/login", async (req, res) => {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res
+          .status(400)
+          .json({ message: "Email and password are required" });
+      }
+
+      try {
+        const user = await userCollection.findOne({ email });
+
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        if (user.password !== password) {
+          return res.status(401).json({ message: "Invalid password" });
+        }
+
+        const token = jwt.sign(
+          { userId: user._id, email: user.email, role: user.role },
+          jwtSecretKey,
+          { expiresIn: "1h" }
+        );
+
+        res.status(200).json({
+          message: "Login successful",
+          data: {
+            userId: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            role: user.role,
+            token,
+          },
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
 
     // api for adding houses
     app.post("/api/v1/create-house", async (req, res) => {
